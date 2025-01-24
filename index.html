@@ -5,133 +5,145 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Map Game</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <title>Game Menu</title>
     <style>
+        /* Reset and Basic Styles */
         body {
             margin: 0;
             padding: 0;
-            height: 100%; /* Full height for PC browsers */
-            width: 100%;
+            height: 100vh;
             overflow: hidden;
+            font-family: 'Arial', sans-serif;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: black;
         }
-        #map {
-            height: 100%; /* Full height for both mobile and desktop */
-            width: 100%;
+
+        /* Background Grid Animation */
+        .grid {
             position: absolute;
             top: 0;
             left: 0;
+            width: 100%;
+            height: 100%;
+            display: grid;
+            grid-template-columns: repeat(20, 1fr);
+            grid-template-rows: repeat(20, 1fr);
+            z-index: -1;
         }
-        .info {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background: rgba(0, 0, 0, 0.7);
+
+        .grid div {
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            animation: fade 5s infinite;
+        }
+
+        .grid div:nth-child(odd) {
+            animation-delay: 2.5s;
+        }
+
+        @keyframes fade {
+            0%, 100% {
+                background: rgba(255, 255, 255, 0.05);
+            }
+            50% {
+                background: rgba(255, 255, 255, 0.15);
+            }
+        }
+
+        /* Center Content */
+        .menu-container {
+            text-align: center;
+            z-index: 10;
+            animation: slideDown 1.5s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Title Styles */
+        h1 {
+            font-size: 2.5rem; /* Slightly smaller for better mobile compatibility */
+            margin-bottom: 20px;
+            background: linear-gradient(90deg, #4e54c8, #8f94fb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: subtleGlow 2s infinite alternate;
+        }
+
+        @keyframes subtleGlow {
+            from {
+                text-shadow: 0 0 5px #4e54c8, 0 0 10px #8f94fb, 0 0 15px #4e54c8;
+            }
+            to {
+                text-shadow: 0 0 3px #4e54c8, 0 0 6px #8f94fb, 0 0 9px #4e54c8;
+            }
+        }
+
+        /* Button Styles */
+        button {
+            padding: 15px 30px;
+            font-size: 1.2rem;
             color: white;
-            padding: 10px;
+            background: linear-gradient(45deg, #ff416c, #ff4b2b);
+            border: none;
             border-radius: 5px;
-            z-index: 1000;
-            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
         }
-        .info p {
-            margin: 5px 0;
+
+        button:hover {
+            transform: scale(1.1);
+            background: linear-gradient(45deg, #ff4b2b, #ff416c);
+            box-shadow: 0 6px 10px rgba(255, 75, 43, 0.4);
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        /* Description Text */
+        p {
+            font-size: 1rem;
+            margin-bottom: 20px;
         }
     </style>
 </head>
 <body>
-    <div class="info">
-        <p><strong>Position:</strong> <span id="position">Loading...</span></p>
-        <p><strong>Chunks Claimed:</strong> <span id="chunks">0</span></p>
-    </div>
-    <div id="map"></div>
-
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script>
-        // Initialize the map
-        const map = L.map('map').setView([0, 0], 18);
-
-        // Add OpenStreetMap tiles
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
-
-        // Store owned chunks
-        const chunkSize = 50;
-        const ownedChunks = new Set();
-        let chunkCount = 0;
-
-        // Add a red dot for the user's position
-        const userMarker = L.circleMarker([0, 0], {
-            color: 'red',
-            radius: 8,
-            fillColor: 'red',
-            fillOpacity: 1
-        }).addTo(map);
-
-        // Display position and claimed chunks
-        const positionDisplay = document.getElementById("position");
-        const chunksDisplay = document.getElementById("chunks");
-
-        // Geolocation support for mobile and desktop
-        if (navigator.geolocation) {
-            navigator.geolocation.watchPosition(
-                (position) => {
-                    const { latitude, longitude } = position.coords;
-                    const currentLatLng = [latitude, longitude];
-
-                    // Center map on the user's position
-                    map.setView(currentLatLng);
-
-                    // Update the user's marker position
-                    userMarker.setLatLng(currentLatLng);
-
-                    // Update the position display
-                    positionDisplay.innerText = `Lat: ${latitude.toFixed(5)}, Lng: ${longitude.toFixed(5)}`;
-
-                    // Claim chunks
-                    handleChunks(latitude, longitude);
-                },
-                (error) => {
-                    alert("Unable to fetch location: " + error.message);
-                },
-                { enableHighAccuracy: true }
-            );
-        } else {
-            alert("Geolocation is not supported by your browser.");
-        }
-
-        // Claim and draw chunks
-        function handleChunks(lat, lng) {
-            const chunkX = Math.floor((lng * 111139) / chunkSize);
-            const chunkY = Math.floor((lat * 111139) / chunkSize);
-            const chunkId = `${chunkX},${chunkY}`;
-
-            if (!ownedChunks.has(chunkId)) {
-                ownedChunks.add(chunkId);
-                chunkCount++;
-                chunksDisplay.innerText = chunkCount;
-
-                const bounds = calculateChunkBounds(chunkX, chunkY);
-                L.rectangle(bounds, {
-                    color: "#00FF00",
-                    weight: 1,
-                    fillOpacity: 0.4
-                }).addTo(map);
+    <!-- Animated Background Grid -->
+    <div class="grid">
+        <!-- 400 Divs for Grid Animation -->
+        <script>
+            for (let i = 0; i < 400; i++) {
+                document.write('<div></div>');
             }
-        }
+        </script>
+    </div>
 
-        // Calculate chunk boundaries
-        function calculateChunkBounds(chunkX, chunkY) {
-            const lng1 = (chunkX * chunkSize) / 111139;
-            const lat1 = (chunkY * chunkSize) / 111139;
-            const lng2 = ((chunkX + 1) * chunkSize) / 111139;
-            const lat2 = ((chunkY + 1) * chunkSize) / 111139;
+    <!-- Menu Content -->
+    <div class="menu-container">
+        <h1>Welcome to Smash Territory</h1>
+        <p>Claim your territory and become the champion!</p>
+        <button onclick="startGame()">Start Game</button>
+    </div>
 
-            return [
-                [lat1, lng1],
-                [lat2, lng2],
-            ];
+    <script>
+        function startGame() {
+            // Redirect to the game
+            window.location.href = "index.html";
         }
     </script>
 </body>
