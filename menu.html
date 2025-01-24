@@ -11,12 +11,12 @@
         body {
             margin: 0;
             padding: 0;
-            height: 100%;
+            height: 100%; /* Full height for PC browsers */
             width: 100%;
             overflow: hidden;
         }
         #map {
-            height: 100%;
+            height: 100%; /* Full height for both mobile and desktop */
             width: 100%;
             position: absolute;
             top: 0;
@@ -47,17 +47,21 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
+        // Initialize the map
         const map = L.map('map').setView([0, 0], 18);
 
+        // Add OpenStreetMap tiles
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
 
+        // Store owned chunks
         const chunkSize = 50;
         const ownedChunks = new Set();
         let chunkCount = 0;
 
+        // Add a red dot for the user's position
         const userMarker = L.circleMarker([0, 0], {
             color: 'red',
             radius: 8,
@@ -65,22 +69,31 @@
             fillOpacity: 1
         }).addTo(map);
 
+        // Display position and claimed chunks
         const positionDisplay = document.getElementById("position");
         const chunksDisplay = document.getElementById("chunks");
 
+        // Geolocation support for mobile and desktop
         if (navigator.geolocation) {
             navigator.geolocation.watchPosition(
                 (position) => {
                     const { latitude, longitude } = position.coords;
                     const currentLatLng = [latitude, longitude];
 
+                    // Center map on the user's position
                     map.setView(currentLatLng);
+
+                    // Update the user's marker position
                     userMarker.setLatLng(currentLatLng);
+
+                    // Update the position display
                     positionDisplay.innerText = `Lat: ${latitude.toFixed(5)}, Lng: ${longitude.toFixed(5)}`;
+
+                    // Claim chunks
                     handleChunks(latitude, longitude);
                 },
                 (error) => {
-                    alert("Location permission is required to play this game. Please enable it in your browser settings.");
+                    alert("Unable to fetch location: " + error.message);
                 },
                 { enableHighAccuracy: true }
             );
@@ -88,6 +101,7 @@
             alert("Geolocation is not supported by your browser.");
         }
 
+        // Claim and draw chunks
         function handleChunks(lat, lng) {
             const chunkX = Math.floor((lng * 111139) / chunkSize);
             const chunkY = Math.floor((lat * 111139) / chunkSize);
@@ -107,6 +121,7 @@
             }
         }
 
+        // Calculate chunk boundaries
         function calculateChunkBounds(chunkX, chunkY) {
             const lng1 = (chunkX * chunkSize) / 111139;
             const lat1 = (chunkY * chunkSize) / 111139;
@@ -121,3 +136,4 @@
     </script>
 </body>
 </html>
+
