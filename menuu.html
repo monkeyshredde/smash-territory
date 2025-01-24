@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Map Game</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100%; /* Full height for PC browsers */
+            width: 100%;
+            overflow: hidden;
+        }
+        #map {
+            height: 100%; /* Full height for both mobile and desktop */
+            width: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 1000;
+            font-size: 14px;
+        }
+        .info p {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="info">
+        <p><strong>Position:</strong> <span id="position">Loading...</span></p>
+        <p><strong>Chunks Claimed:</strong> <span id="chunks">0</span></p>
+    </div>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Initialize the map
+        const map = L.map('map').setView([0, 0], 18);
+
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Store owned chunks
+        const chunkSize = 50;
+        const ownedChunks = new Set();
+        let chunkCount = 0;
+
+        // Add a red dot for the user's position
+        const userMarker = L.circleMarker([0, 0], {
+            color: 'red',
+            radius: 8,
+            fillColor: 'red',
+            fillOpacity: 1
+        }).addTo(map);
+
+        // Display position and claimed chunks
+        const positionDisplay = document.getElementById("position");
+        const chunksDisplay = document.getElementById("chunks");
+
+        // Geolocation support for mobile and desktop
+        if (navigator.geolocation) {
+            navigator.geolocation.watchPosition(
+                (position) => {
+                    const { latitude, longitude } = position.coords;
+                    const currentLatLng = [latitude, longitude];
+
+                    // Center map on the user's position
+                    map.setView(currentLatLng);
+
+                    // Update the user's marker position
+                    userMarker.setLatLng(currentLatLng);
+
+                    // Update the position display
+                    positionDisplay.innerText = `Lat: ${latitude.toFixed(5)}, Lng: ${longitude.toFixed(5)}`;
+
+                    // Claim chunks
+                    handleChunks(latitude, longitude);
+                },
+                (error) => {
+                    alert("Unable to fetch location: " + error.message);
+                },
+                { enableHighAccuracy: true }
+            );
+        } else {
+            alert("Geolocation is not supported by your browser.");
+        }
+
+        // Claim and draw chunks
+        function handleChunks(lat, lng) {
+            const chunkX = Math.floor((lng * 111139) / chunkSize);
+            const chunkY = Math.floor((lat * 111139) / chunkSize);
+            const chunkId = `${chunkX},${chunkY}`;
+
+            if (!ownedChunks.has(chunkId)) {
+                ownedChunks.add(chunkId);
+                chunkCount++;
+                chunksDisplay.innerText = chunkCount;
+
+                const bounds = calculateChunkBounds(chunkX, chunkY);
+                L.rectangle(bounds, {
+                    color: "#00FF00",
+                    weight: 1,
+                    fillOpacity: 0.4
+                }).addTo(map);
+            }
+        }
+
+        // Calculate chunk boundaries
+        function calculateChunkBounds(chunkX, chunkY) {
+            const lng1 = (chunkX * chunkSize) / 111139;
+            const lat1 = (chunkY * chunkSize) / 111139;
+            const lng2 = ((chunkX + 1) * chunkSize) / 111139;
+            const lat2 = ((chunkY + 1) * chunkSize) / 111139;
+
+            return [
+                [lat1, lng1],
+                [lat2, lng2],
+            ];
+        }
+    </script>
+</body>
+</html>
+
